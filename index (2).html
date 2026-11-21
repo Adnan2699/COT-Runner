@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>COT Runner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: '#0F1F3D',
+            paper: '#F4F5F7',
+            signal: '#FFC400',
+            action: '#1F4FD8',
+            stop: '#C8261B',
+            go: '#12805C'
+          },
+          fontFamily: {
+            sans: ['Barlow', 'system-ui', 'sans-serif'],
+            cond: ['"Barlow Condensed"', 'Barlow', 'system-ui', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :focus-visible { outline: 3px solid #1F4FD8; outline-offset: 2px; }
+    #reader video { width: 100% !important; border-radius: 12px; }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+
+<body class="bg-paper text-ink font-sans min-h-screen">
+
+  <!-- ===================== LOGIN ===================== -->
+  <section id="view-login" class="min-h-screen flex flex-col justify-center px-6 max-w-md mx-auto">
+    <h1 class="font-cond text-6xl font-bold leading-none">COT Runner</h1>
+    <p class="mt-3 text-lg text-slate-700">Masukkan Nomor OpsID untuk mulai menarik COT.</p>
+
+    <label for="opsInput" class="mt-10 block font-semibold">Nomor OpsID</label>
+    <input id="opsInput" type="text" autocomplete="off" autocapitalize="off"
+           class="mt-1 w-full h-14 px-4 text-xl rounded-lg border-2 border-ink/30 bg-white focus:border-action focus:outline-none">
+    <p id="loginError" class="hidden mt-3 font-semibold text-stop" role="alert"></p>
+    <button id="loginBtn" type="button"
+            class="mt-4 h-14 rounded-lg bg-ink text-white text-lg font-bold disabled:opacity-50">Masuk</button>
+  </section>
+
+  <!-- ===================== APLIKASI ===================== -->
+  <div id="view-app" class="hidden pb-24 md:pb-10">
+    <header class="sticky top-0 z-20 bg-ink text-white">
+      <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+        <p id="greeting" class="font-semibold text-lg truncate"></p>
+        <button id="logoutBtn" type="button"
+                class="h-10 px-4 rounded-md border border-white/50 text-sm font-semibold shrink-0 disabled:opacity-50">Logout</button>
+      </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-4 md:grid md:grid-cols-5 md:gap-6">
+
+      <!-- ---------- Panel tugas ---------- -->
+      <section id="panel-task" class="md:col-span-2 md:block" aria-label="Tugas penarikan COT">
+        <div id="taskCard" class="hidden rounded-xl bg-signal p-5">
+          <p class="font-semibold">Ambil COT ini</p>
+          <p id="taskCot" class="mt-1 font-cond text-6xl font-bold leading-none break-all"></p>
+          <div class="mt-4 pt-3 border-t-2 border-ink">
+            <p class="font-semibold">Lokasi staging area</p>
+            <p id="taskStaging" class="font-cond text-5xl font-bold leading-tight break-words"></p>
+          </div>
+          <p id="taskMeta" class="mt-3 font-semibold"></p>
+        </div>
+
+        <div id="taskEmpty" class="hidden rounded-xl bg-white border-2 border-ink/20 p-5">
+          <p class="font-cond text-3xl font-bold leading-tight">Belum ada COT tersedia</p>
+          <p class="mt-2 text-slate-700">Semua COT di daftar sedang dikerjakan atau sudah selesai. Cek lagi sebentar lagi.</p>
+          <button id="refreshTaskBtn" type="button"
+                  class="mt-4 h-12 px-5 rounded-lg bg-action text-white font-bold disabled:opacity-50">Cari COT lagi</button>
+        </div>
+
+        <div id="scanBox" class="hidden mt-4">
+          <label for="cotInput" class="font-semibold">Nomor COT di keranjang</label>
+          <div class="mt-1 flex gap-2">
+            <input id="cotInput" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false"
+                   class="flex-1 min-w-0 h-14 px-4 text-xl rounded-lg border-2 border-ink/30 bg-white focus:border-action focus:outline-none">
+            <button id="scanBtn" type="button"
+                    class="h-14 px-4 rounded-lg bg-action text-white font-bold shrink-0 disabled:opacity-50">Scan kamera</button>
+          </div>
+          <label class="mt-2 flex items-center justify-center h-12 rounded-lg border-2 border-action bg-white text-action font-bold cursor-pointer">
+            Foto barcode (kamera bawaan HP)
+            <input id="fileInput" type="file" accept="image/*" capture="environment" class="hidden">
+          </label>
+
+          <button id="submitBtn" type="button"
+                  class="mt-4 w-full h-16 rounded-lg bg-go text-white text-xl font-bold disabled:bg-slate-300 disabled:text-slate-600">Konfirmasi COT</button>
+          <button id="missingBtn" type="button"
+                  class="mt-3 w-full h-12 rounded-lg border-2 border-stop text-stop font-bold bg-white disabled:opacity-50">COT Missing</button>
+        </div>
+      </section>
+
+      <!-- ---------- Panel dashboard ---------- -->
+      <section id="panel-dash" class="hidden md:block md:col-span-3 mt-0" aria-label="Monitoring COT">
+        <div class="flex items-baseline justify-between">
+          <h2 class="font-cond text-3xl font-bold">Monitoring</h2>
+          <p id="dashStatus" class="text-sm text-slate-600"></p>
+        </div>
+
+        <div class="mt-3 grid grid-cols-2 gap-3">
+          <div class="rounded-xl bg-white border-2 border-ink/15 p-4">
+            <p class="font-semibold text-slate-700">COT pending</p>
+            <p id="statPending" class="font-cond text-5xl font-bold leading-none mt-1">-</p>
+          </div>
+          <div class="rounded-xl bg-white border-2 border-ink/15 p-4">
+            <p class="font-semibold text-slate-700">COT done</p>
+            <p id="statDone" class="font-cond text-5xl font-bold leading-none mt-1 text-go">-</p>
+          </div>
+          <div class="col-span-2 rounded-xl bg-white border-2 border-ink/15 p-4 flex items-end justify-between gap-4">
+            <div>
+              <p class="font-semibold text-slate-700">COT di luar inventory</p>
+              <p id="statOutside" class="font-cond text-5xl font-bold leading-none mt-1">-</p>
+            </div>
+            <div class="text-right">
+              <p class="font-semibold text-slate-700">Total binded</p>
+              <p id="statOutsideBinded" class="font-cond text-4xl font-bold leading-none mt-1">-</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-3 rounded-xl bg-white border-2 border-ink/15 p-4">
+          <div class="flex items-baseline justify-between">
+            <p class="font-semibold">Progress penarikan COT</p>
+            <p id="progressPct" class="font-cond text-3xl font-bold">0%</p>
+          </div>
+          <div class="mt-2 h-4 rounded-full bg-slate-200 overflow-hidden"
+               role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progressTrack">
+            <div id="progressBar" class="h-full bg-go" style="width:0%"></div>
+          </div>
+          <p id="progressNote" class="mt-2 text-sm text-slate-700"></p>
+        </div>
+
+        <h3 class="mt-5 font-cond text-2xl font-bold">20 COT dengan binded terbesar</h3>
+        <div class="mt-2 rounded-xl bg-white border-2 border-ink/15 overflow-x-auto">
+          <table class="w-full text-left">
+            <thead class="bg-ink text-white">
+              <tr>
+                <th class="py-2 pl-3 pr-2 font-semibold w-10">#</th>
+                <th class="py-2 px-2 font-semibold">COT</th>
+                <th class="py-2 px-2 font-semibold">Staging area</th>
+                <th class="py-2 pl-2 pr-3 font-semibold text-right">Binded</th>
+              </tr>
+            </thead>
+            <tbody id="topBody">
+              <tr><td colspan="4" class="p-4 text-slate-600">Memuat data…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- Navigasi bawah (mobile) -->
+    <nav class="md:hidden fixed bottom-0 inset-x-0 z-20 bg-white border-t-2 border-ink/15 grid grid-cols-2"
+         style="padding-bottom: env(safe-area-inset-bottom)">
+      <button id="tabTask" type="button" class="h-16 font-bold text-lg bg-ink text-white">Tugas</button>
+      <button id="tabDash" type="button" class="h-16 font-bold text-lg text-ink">Monitoring</button>
+    </nav>
+  </div>
+
+  <!-- ===================== OVERLAY ===================== -->
+
+  <!-- Blocker COT salah -->
+  <div id="blocker" class="hidden fixed inset-0 z-50 bg-stop text-white flex flex-col items-center justify-center text-center px-6"
+       role="alertdialog" aria-modal="true" aria-labelledby="blkTitle">
+    <p id="blkTitle" class="font-cond text-7xl font-bold leading-none">COT salah</p>
+    <p class="mt-4 text-2xl font-bold">Jangan ambil barang ini.</p>
+    <div class="mt-6 w-full max-w-sm text-left bg-white/15 rounded-lg p-4">
+      <p class="font-semibold">Yang Anda scan</p>
+      <p id="blkGot" class="font-cond text-3xl font-bold break-all"></p>
+      <p class="mt-3 font-semibold">Yang harus diambil</p>
+      <p id="blkExpected" class="font-cond text-3xl font-bold break-all"></p>
+    </div>
+    <button id="blkClose" type="button"
+            class="mt-8 w-full max-w-sm h-14 rounded-lg bg-white text-stop text-lg font-bold">Mengerti, scan ulang</button>
+  </div>
+
+  <!-- Konfirmasi Missing -->
+  <div id="missingModal" class="hidden fixed inset-0 z-40 bg-ink/70 flex items-end sm:items-center justify-center p-4"
+       role="dialog" aria-modal="true" aria-labelledby="missingTitle">
+    <div class="w-full max-w-sm bg-white rounded-xl p-5">
+      <p id="missingTitle" class="font-cond text-3xl font-bold leading-tight">Tandai COT ini missing?</p>
+      <p id="missingCot" class="mt-2 font-cond text-3xl font-bold break-all text-stop"></p>
+      <p class="mt-2 text-slate-700">COT tidak akan direkomendasikan lagi ke operator lain, dan Anda langsung mendapat COT pengganti.</p>
+      <div class="mt-5 grid grid-cols-2 gap-3">
+        <button id="missingCancel" type="button" class="h-12 rounded-lg border-2 border-ink/30 font-bold">Batal</button>
+        <button id="missingOk" type="button" class="h-12 rounded-lg bg-stop text-white font-bold">Ya, missing</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scanner kamera -->
+  <div id="scanOverlay" class="hidden fixed inset-0 z-40 bg-ink flex flex-col p-4">
+    <p class="text-white font-bold text-xl">Arahkan kamera ke barcode atau QR pada keranjang</p>
+    <div class="flex-1 flex items-center">
+      <div id="reader" class="w-full"></div>
+    </div>
+    <button id="scanClose" type="button" class="h-14 rounded-lg bg-white text-ink text-lg font-bold">Tutup kamera</button>
+  </div>
+
+  <div id="file-reader" class="hidden"></div>
+
+  <!-- Banner sukses -->
+  <div id="successBanner" class="hidden fixed top-0 inset-x-0 z-50 bg-go text-white px-4 pb-5 shadow-lg cursor-pointer"
+       style="padding-top: max(1rem, env(safe-area-inset-top))" role="status" aria-live="polite">
+    <div class="max-w-md mx-auto flex items-center gap-3">
+      <svg class="w-12 h-12 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <path d="M7 12.5l3.2 3.2L17 9"></path>
+      </svg>
+      <div class="min-w-0">
+        <p class="font-cond text-3xl font-bold leading-none">COT terkonfirmasi</p>
+        <p id="successCot" class="mt-1 font-cond text-2xl font-semibold break-all"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed top-16 inset-x-4 z-50 mx-auto max-w-md rounded-lg px-4 py-3 font-semibold shadow-lg" role="status"></div>
+
+<script>
+  // GANTI dengan URL Web App Anda (yang berakhiran /exec).
+  window.COT_API_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnTcW5AgJO1XcQoZAiLkh5IJbvrU4SUeD8MM_XDSiJnKfOmq8T1JGHOGnRMRm65GINxGsX7xStCOyD7lGMjnUHdpvqgGiH0ST6XGu1IMceMYEjWpl1Wwv_DH7gP-0X0uapM9GC7t1RJnVmYFhzSONTgTKvbnYScWLKSbp05-Vy-QIcy5glAaIyzrzJ0cl6CzQVULZWvD51crYrNp1wW6PCd_DEbxzdxhX1N428ouSEnLQ_Qg4xPkEf9847hG8_XPpPRYE3VSbVHjagRVC4XjsQ36Ndy3Mw&lib=MU4CoX5Bnr8ejfcVIbyG_ZTQC-mBP0fK0';
+</script>
+<script>
+(function () {
+  'use strict';
+
+  var $ = function (id) { return document.getElementById(id); };
+  var S = { opsId: null, name: '', task: null, blocked: false, busy: false, scanner: null, scanHandled: false };
+
+  /* ---------- helper ---------- */
+  function api(action) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    var url = window.COT_API_URL;
+    if (!url || url.indexOf('PASTE_') === 0) {
+      return Promise.reject(new Error('URL API belum diisi. Ubah COT_API_URL di index.html.'));
+    }
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, 40000);
+    // Tanpa header khusus agar browser tidak mengirim preflight CORS.
+    return fetch(url, { method: 'POST', body: JSON.stringify({ action: action, args: args }), signal: ctrl.signal })
+      .then(function (res) {
+        if (!res.ok) throw new Error('Server membalas dengan kode ' + res.status + '.');
+        return res.text();
+      })
+      .then(function (txt) {
+        try { return JSON.parse(txt); }
+        catch (e) { throw new Error('Respons server tidak valid. Pastikan deployment memakai "Who has access: Anyone" dan URL berakhiran /exec.'); }
+      })
+      .catch(function (e) {
+        if (e && e.name === 'AbortError') throw new Error('Server terlalu lama menjawab. Coba lagi.');
+        if (e instanceof TypeError) throw new Error('Tidak bisa menghubungi server. Cek internet dan URL API.');
+        throw e;
+      })
+      .finally(function () { clearTimeout(timer); });
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function fmt(n) { return new Intl.NumberFormat('id-ID').format(n || 0); }
+  var store = {
+    get: function () { try { return localStorage.getItem('cot_ops'); } catch (e) { return null; } },
+    set: function (v) { try { v ? localStorage.setItem('cot_ops', v) : localStorage.removeItem('cot_ops'); } catch (e) {} }
+  };
+  var toastTimer;
+  function toast(msg, kind) {
+    var t = $('toast');
+    t.textContent = msg;
+    t.className = 'fixed top-16 inset-x-4 z-50 mx-auto max-w-md rounded-lg px-4 py-3 font-semibold shadow-lg ' +
+      (kind === 'err' ? 'bg-stop text-white' : 'bg-go text-white');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.add('hidden'); }, 4000);
+  }
+  function errMsg(e) { return (e && e.message) ? e.message : 'Terjadi kesalahan. Coba lagi.'; }
+
+  /* ---------- suara & notifikasi sukses ---------- */
+  var audioCtx = null;
+  function unlockAudio() {
+    try {
+      if (!audioCtx) {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (AC) audioCtx = new AC();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (e) {}
+  }
+  function playSuccess() {
+    try {
+      unlockAudio();
+      if (audioCtx) {
+        var t0 = audioCtx.currentTime;
+        [[880, 0], [1318.5, 0.15]].forEach(function (n) {
+          var o = audioCtx.createOscillator();
+          var g = audioCtx.createGain();
+          var t = t0 + n[1];
+          o.type = 'sine';
+          o.frequency.value = n[0];
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(0.5, t + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+          o.connect(g);
+          g.connect(audioCtx.destination);
+          o.start(t);
+          o.stop(t + 0.35);
+        });
+      }
+    } catch (e) {}
+    if (navigator.vibrate) navigator.vibrate(120);
+  }
+  var bannerTimer;
+  function showSuccess(cot) {
+    $('successCot').textContent = cot;
+    $('successBanner').classList.remove('hidden');
+    clearTimeout(bannerTimer);
+    bannerTimer = setTimeout(function () { $('successBanner').classList.add('hidden'); }, 2500);
+    playSuccess();
+  }
+
+  function setBusy(b) {
+    S.busy = b;
+    ['scanBtn', 'missingBtn', 'refreshTaskBtn', 'logoutBtn'].forEach(function (id) { $(id).disabled = b; });
+    updateSubmit();
+  }
+
+  /* ---------- tampilan ---------- */
+  function showLogin() {
+    $('view-app').classList.add('hidden');
+    $('view-login').classList.remove('hidden');
+    $('opsInput').focus();
+  }
+  function showApp() {
+    $('view-login').classList.add('hidden');
+    $('view-app').classList.remove('hidden');
+    $('greeting').textContent = 'Halo, ' + S.name;
+    setTab('task');
+  }
+  function setTab(tab) {
+    var task = tab === 'task';
+    $('panel-task').classList.toggle('hidden', !task);
+    $('panel-dash').classList.toggle('hidden', task);
+    $('tabTask').className = 'h-16 font-bold text-lg ' + (task ? 'bg-ink text-white' : 'text-ink');
+    $('tabDash').className = 'h-16 font-bold text-lg ' + (task ? 'text-ink' : 'bg-ink text-white');
+    if (!task) refreshDash(false);
+  }
+
+  function renderTask() {
+    var t = S.task;
+    $('taskCard').classList.toggle('hidden', !t);
+    $('scanBox').classList.toggle('hidden', !t);
+    $('taskEmpty').classList.toggle('hidden', !!t);
+    if (t) {
+      $('taskCot').textContent = t.cot;
+      $('taskStaging').textContent = t.staging || '-';
+      $('taskMeta').textContent = 'Binded order quantity: ' + fmt(t.binded);
+    }
+    $('cotInput').value = '';
+    S.blocked = false;
+    updateSubmit();
+    if (t && !window.matchMedia('(pointer: coarse)').matches) $('cotInput').focus();
+  }
+
+  function updateSubmit() {
+    var btn = $('submitBtn');
+    var v = $('cotInput').value.trim();
+    var ok = S.task && v && v.toUpperCase() === S.task.cot.toUpperCase();
+    if (S.blocked && ok) S.blocked = false;
+    if (S.busy) { btn.disabled = true; btn.textContent = 'Memproses…'; return; }
+    if (S.blocked) { btn.disabled = true; btn.textContent = 'Terkunci: scan COT yang benar'; return; }
+    btn.disabled = !v;
+    btn.textContent = 'Konfirmasi COT';
+  }
+
+  /* ---------- login / logout ---------- */
+  async function doLogin(id, silent) {
+    $('loginError').classList.add('hidden');
+    $('loginBtn').disabled = true;
+    try {
+      var r = await api('login', id);
+      if (!r || !r.ok) {
+        store.set(null);
+        if (!silent) { $('loginError').textContent = (r && r.message) || 'Login gagal.'; $('loginError').classList.remove('hidden'); }
+        showLogin();
+        return;
+      }
+      S.opsId = r.opsId; S.name = r.name; S.task = r.task;
+      store.set(r.opsId);
+      showApp();
+      renderTask();
+      refreshDash(true);
+    } catch (e) {
+      if (!silent) { $('loginError').textContent = errMsg(e); $('loginError').classList.remove('hidden'); }
+      showLogin();
+    } finally {
+      $('loginBtn').disabled = false;
+    }
+  }
+
+  async function doLogout() {
+    setBusy(true);
+    try {
+      var r = await api('logout', S.opsId);
+      if (!r || !r.ok) throw new Error((r && r.message) || 'Logout gagal. Coba lagi.');
+      store.set(null);
+      S.opsId = null; S.task = null; S.name = '';
+      showLogin();
+      $('opsInput').value = '';
+    } catch (e) {
+      toast(errMsg(e), 'err');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /* ---------- tugas ---------- */
+  async function loadTask() {
+    setBusy(true);
+    try {
+      var r = await api('getTask', S.opsId);
+      if (!r || !r.ok) throw new Error((r && r.message) || 'Gagal memuat tugas.');
+      S.task = r.task;
+      renderTask();
+    } catch (e) {
+      toast(errMsg(e), 'err');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function showBlocker(got, expected) {
+    S.blocked = true;
+    $('blkGot').textContent = got;
+    $('blkExpected').textContent = expected || (S.task && S.task.cot) || '';
+    $('blocker').classList.remove('hidden');
+    if (navigator.vibrate) navigator.vibrate([250, 120, 250, 120, 250]);
+    $('blkClose').focus();
+    updateSubmit();
+  }
+
+  async function submit(value) {
+    if (S.busy || !S.task) return;
+    var v = String(value == null ? $('cotInput').value : value).trim();
+    if (!v) return;
+
+    // Pemeriksaan cepat di perangkat; server tetap memvalidasi ulang.
+    if (v.toUpperCase() !== S.task.cot.toUpperCase()) { showBlocker(v); return; }
+
+    setBusy(true);
+    try {
+      var r = await api('submitCot', S.opsId, v);
+      if (r && r.ok) {
+        showSuccess(r.done);
+        S.task = r.task;
+        renderTask();
+        refreshDash(true);
+      } else if (r && r.code === 'MISMATCH') {
+        showBlocker(v, r.expected);
+      } else {
+        toast((r && r.message) || 'Gagal menyimpan.', 'err');
+        if (r && r.task !== undefined) { S.task = r.task; renderTask(); }
+      }
+    } catch (e) {
+      toast(errMsg(e), 'err');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function doMissing() {
+    $('missingModal').classList.add('hidden');
+    setBusy(true);
+    try {
+      var r = await api('markMissing', S.opsId);
+      if (r && r.ok) {
+        toast('COT ' + r.missing + ' ditandai missing.');
+        S.task = r.task;
+        renderTask();
+        refreshDash(true);
+      } else {
+        toast((r && r.message) || 'Gagal menandai missing.', 'err');
+        if (r && r.task !== undefined) { S.task = r.task; renderTask(); }
+      }
+    } catch (e) {
+      toast(errMsg(e), 'err');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /* ---------- scanner ---------- */
+  async function openScanner() {
+    if (S.scanner || S.busy) return;
+    if (typeof Html5Qrcode === 'undefined') {
+      toast('Pustaka scanner gagal dimuat. Cek koneksi internet, atau pakai Foto barcode.', 'err');
+      return;
+    }
+    if (!window.isSecureContext || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast('Halaman ini tidak diizinkan memakai kamera. Buka link di Chrome/Safari, atau pakai Foto barcode.', 'err');
+      return;
+    }
+    S.scanHandled = false;
+    $('scanOverlay').classList.remove('hidden');
+    try {
+      S.scanner = new Html5Qrcode('reader');
+      await S.scanner.start(
+        { facingMode: 'environment' },
+        {
+          fps: 10,
+          qrbox: function (w, h) {
+            return { width: Math.floor(Math.min(w, 360) * 0.9), height: Math.floor(Math.min(h, 360) * 0.5) };
+          }
+        },
+        onScan,
+        function () {}
+      );
+    } catch (e) {
+      await closeScanner();
+      console.error('Kamera gagal dibuka:', e);
+      var nama = (e && e.name) ? e.name : String(e);
+      var pesan;
+      if (nama === 'NotAllowedError' || nama === 'PermissionDeniedError' || /permission/i.test(String(e))) {
+        pesan = 'Izin kamera ditolak. Izinkan kamera lewat ikon gembok di address bar, lalu coba lagi. Atau pakai Foto barcode.';
+      } else if (nama === 'NotFoundError') {
+        pesan = 'Kamera tidak ditemukan di perangkat ini. Pakai Foto barcode.';
+      } else if (nama === 'NotReadableError') {
+        pesan = 'Kamera sedang dipakai aplikasi lain. Tutup aplikasi itu, lalu coba lagi.';
+      } else {
+        pesan = 'Kamera gagal dibuka (' + nama + '). Pakai Foto barcode.';
+      }
+      toast(pesan, 'err');
+    }
+  }
+
+  async function closeScanner() {
+    var sc = S.scanner;
+    S.scanner = null;
+    $('scanOverlay').classList.add('hidden');
+    if (sc) {
+      try { await sc.stop(); } catch (e) {}
+      try { sc.clear(); } catch (e) {}
+    }
+  }
+
+  function onScan(text) {
+    if (S.scanHandled) return;
+    S.scanHandled = true;
+    closeScanner().then(function () {
+      var v = String(text).trim();
+      $('cotInput').value = v;
+      updateSubmit();
+      submit(v);
+    });
+  }
+
+  async function scanPhoto(file) {
+    try {
+      var h = new Html5Qrcode('file-reader');
+      var text = await h.scanFile(file, false);
+      try { h.clear(); } catch (e) {}
+      var v = String(text).trim();
+      $('cotInput').value = v;
+      updateSubmit();
+      submit(v);
+    } catch (e) {
+      toast('Barcode tidak terbaca. Coba foto lebih dekat atau ketik manual.', 'err');
+    }
+  }
+
+  /* ---------- dashboard ---------- */
+  async function refreshDash(force) {
+    try {
+      var d = await api('getDashboard', !!force);
+      if (!d || d.ok === false) throw new Error((d && d.message) || 'Gagal memuat monitoring.');
+      renderDash(d);
+    } catch (e) {
+      $('dashStatus').textContent = errMsg(e);
+    }
+  }
+
+  function badge(status) {
+    var map = {
+      DONE: ['Selesai', 'bg-go text-white'],
+      LOCKED: ['Dikerjakan', 'bg-signal text-ink'],
+      MISSING: ['Missing', 'bg-stop text-white']
+    };
+    var b = map[status];
+    return b ? ' <span class="ml-1 px-2 py-0.5 rounded text-xs font-bold ' + b[1] + '">' + b[0] + '</span>' : '';
+  }
+
+  function renderDash(d) {
+    $('dashStatus').textContent = 'Diperbarui ' + d.updatedAt;
+    $('statPending').textContent = fmt(d.pending);
+    $('statDone').textContent = fmt(d.done);
+    $('statOutside').textContent = fmt(d.outsideCount);
+    $('statOutsideBinded').textContent = fmt(d.outsideBinded);
+    $('progressPct').textContent = d.progress + '%';
+    $('progressBar').style.width = Math.min(100, d.progress) + '%';
+    $('progressTrack').setAttribute('aria-valuenow', d.progress);
+    $('progressNote').textContent = fmt(d.manualDone) + ' COT sudah ditarik manual, ' + fmt(d.pending) +
+      ' masih pending, ' + fmt(d.locked) + ' sedang dikerjakan, ' + fmt(d.missing) + ' missing.';
+
+    var rows = d.top20 || [];
+    $('topBody').innerHTML = rows.length ? rows.map(function (r, i) {
+      return '<tr class="' + (i % 2 ? 'bg-paper' : '') + '">' +
+        '<td class="py-2 pl-3 pr-2 font-cond text-xl font-bold">' + (i + 1) + '</td>' +
+        '<td class="py-2 px-2 font-semibold break-all">' + esc(r.cot) + badge(r.handled) + '</td>' +
+        '<td class="py-2 px-2">' + esc(r.staging) + '</td>' +
+        '<td class="py-2 pl-2 pr-3 text-right font-cond text-xl font-bold">' + fmt(r.binded) + '</td>' +
+        '</tr>';
+    }).join('') : '<tr><td colspan="4" class="p-4 text-slate-600">Belum ada data di View Data.</td></tr>';
+  }
+
+  /* ---------- event ---------- */
+  $('loginBtn').addEventListener('click', function () {
+    var id = $('opsInput').value.trim();
+    if (!id) { $('loginError').textContent = 'Isi Nomor OpsID terlebih dulu.'; $('loginError').classList.remove('hidden'); return; }
+    doLogin(id, false);
+  });
+  $('opsInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('loginBtn').click(); });
+
+  $('logoutBtn').addEventListener('click', doLogout);
+  $('refreshTaskBtn').addEventListener('click', loadTask);
+
+  $('cotInput').addEventListener('input', updateSubmit);
+  $('cotInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+  $('submitBtn').addEventListener('click', function () { submit(); });
+
+  $('scanBtn').addEventListener('click', openScanner);
+  $('scanClose').addEventListener('click', closeScanner);
+  $('fileInput').addEventListener('change', function (e) {
+    var f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (f) scanPhoto(f);
+  });
+
+  $('blkClose').addEventListener('click', function () {
+    $('blocker').classList.add('hidden');
+    $('cotInput').value = '';
+    updateSubmit();
+    $('cotInput').focus();
+  });
+
+  $('missingBtn').addEventListener('click', function () {
+    if (!S.task) return;
+    $('missingCot').textContent = S.task.cot;
+    $('missingModal').classList.remove('hidden');
+  });
+  $('missingCancel').addEventListener('click', function () { $('missingModal').classList.add('hidden'); });
+  $('missingOk').addEventListener('click', doMissing);
+
+  $('tabTask').addEventListener('click', function () { setTab('task'); });
+  $('tabDash').addEventListener('click', function () { setTab('dash'); });
+
+  document.addEventListener('pointerdown', unlockAudio, { once: true });
+  document.addEventListener('keydown', unlockAudio, { once: true });
+  $('successBanner').addEventListener('click', function () { $('successBanner').classList.add('hidden'); });
+
+  setInterval(function () {
+    if (S.opsId && !document.hidden) refreshDash(false);
+  }, 30000);
+
+  /* ---------- mulai ---------- */
+  var saved = store.get();
+  if (saved) doLogin(saved, true); else $('opsInput').focus();
+})();
+</script>
+</body>
+</html>
