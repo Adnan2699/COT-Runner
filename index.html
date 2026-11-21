@@ -249,8 +249,12 @@
     }
     var ctrl = new AbortController();
     var timer = setTimeout(function () { ctrl.abort(); }, 40000);
-    // Tanpa header khusus agar browser tidak mengirim preflight CORS.
-    return fetch(url, { method: 'POST', body: JSON.stringify({ action: action, args: args }), signal: ctrl.signal })
+    // Pakai GET tanpa header khusus: tidak memicu preflight CORS dan aman terhadap pengalihan Google.
+    var full = url + (url.indexOf('?') >= 0 ? '&' : '?') +
+      'action=' + encodeURIComponent(action) +
+      '&args=' + encodeURIComponent(JSON.stringify(args)) +
+      '&_=' + Date.now();
+    return fetch(full, { method: 'GET', cache: 'no-store', signal: ctrl.signal })
       .then(function (res) {
         if (!res.ok) throw new Error('Server membalas dengan kode ' + res.status + '.');
         return res.text();
