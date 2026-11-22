@@ -51,8 +51,18 @@
             class="mt-4 h-14 rounded-lg bg-ink text-white text-lg font-bold disabled:opacity-50">Masuk</button>
   </section>
 
+  <!-- ===================== PILIH MODE ===================== -->
+  <section id="view-mode" class="hidden min-h-screen flex flex-col justify-center px-6 max-w-md mx-auto">
+    <p id="modeGreeting" class="text-lg font-semibold"></p>
+    <h1 class="mt-1 font-cond text-6xl font-bold leading-none">Pilih mode</h1>
+    <p class="mt-3 text-slate-700">Pilih jenis COT yang akan Anda tarik. Mode bisa diganti kapan saja tanpa logout.</p>
+    <button id="modeInv" type="button" class="mt-8 h-20 rounded-xl bg-signal text-ink font-cond text-3xl font-bold disabled:opacity-50">COT Inventory</button>
+    <button id="modeOut" type="button" class="mt-3 h-20 rounded-xl bg-ink text-white font-cond text-3xl font-bold disabled:opacity-50">COT Diluar Inventory</button>
+    <button id="logoutBtn2" type="button" class="mt-6 h-12 rounded-lg border-2 border-ink/30 font-bold disabled:opacity-50">Logout</button>
+  </section>
+
   <!-- ===================== APLIKASI ===================== -->
-  <div id="view-app" class="hidden pb-24 md:pb-10">
+  <div id="view-app" class="hidden pb-24">
     <header class="sticky top-0 z-20 bg-ink text-white">
       <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
         <p id="greeting" class="font-semibold text-lg truncate"></p>
@@ -63,8 +73,11 @@
 
     <main class="max-w-6xl mx-auto px-4 py-4 md:grid md:grid-cols-5 md:gap-6">
 
-      <!-- ---------- Panel tugas ---------- -->
       <section id="panel-task" class="md:col-span-2 md:block" aria-label="Tugas penarikan COT">
+        <div class="mb-3 flex items-center justify-between gap-3 rounded-xl bg-white border-2 border-ink/15 px-4 py-2">
+          <p class="font-semibold">Mode: <span id="modeLabel" class="font-cond text-2xl font-bold"></span></p>
+          <button id="changeModeBtn" type="button" class="h-10 px-4 rounded-lg bg-action text-white font-bold shrink-0 disabled:opacity-50">Ganti mode</button>
+        </div>
         <div id="taskCard" class="hidden rounded-xl bg-signal p-5">
           <p class="font-semibold">Ambil COT ini</p>
           <p id="taskCot" class="mt-1 font-cond text-6xl font-bold leading-none break-all"></p>
@@ -72,7 +85,10 @@
             <p class="font-semibold">Lokasi staging area</p>
             <p id="taskStaging" class="font-cond text-5xl font-bold leading-tight break-words"></p>
           </div>
-          <p id="taskMeta" class="mt-3 font-semibold"></p>
+          <div class="mt-3 grid grid-cols-2 gap-3">
+            <div><p class="font-semibold">Total order</p><p id="taskTotal" class="font-cond text-4xl font-bold leading-none"></p></div>
+            <div><p class="font-semibold">Binded qty</p><p id="taskBinded" class="font-cond text-4xl font-bold leading-none"></p></div>
+          </div>
         </div>
 
         <div id="taskEmpty" class="hidden rounded-xl bg-white border-2 border-ink/20 p-5">
@@ -102,8 +118,7 @@
         </div>
       </section>
 
-      <!-- ---------- Panel dashboard ---------- -->
-      <section id="panel-dash" class="hidden md:block md:col-span-3 mt-0" aria-label="Monitoring COT">
+      <section id="panel-dash" class="md:col-span-3 md:block" aria-label="Monitoring COT">
         <div class="flex items-baseline justify-between">
           <h2 class="font-cond text-3xl font-bold">Monitoring</h2>
           <p id="dashStatus" class="text-sm text-slate-600"></p>
@@ -142,30 +157,79 @@
           <p id="progressNote" class="mt-2 text-sm text-slate-700"></p>
         </div>
 
-        <h3 class="mt-5 font-cond text-2xl font-bold">20 COT dengan binded terbesar</h3>
-        <div class="mt-2 rounded-xl bg-white border-2 border-ink/15 overflow-x-auto">
+        <h3 class="mt-5 font-cond text-2xl font-bold">COT dengan binded terbesar <span id="topCount" class="text-base font-semibold text-slate-600"></span></h3>
+        <div class="mt-2 rounded-xl bg-white border-2 border-ink/15 overflow-auto max-h-[65vh]">
           <table class="w-full text-left">
-            <thead class="bg-ink text-white">
+            <thead class="bg-ink text-white sticky top-0">
               <tr>
                 <th class="py-2 pl-3 pr-2 font-semibold w-10">#</th>
                 <th class="py-2 px-2 font-semibold">COT</th>
                 <th class="py-2 px-2 font-semibold">Staging area</th>
+                <th class="py-2 px-2 font-semibold text-right">Total order</th>
                 <th class="py-2 pl-2 pr-3 font-semibold text-right">Binded</th>
               </tr>
             </thead>
             <tbody id="topBody">
-              <tr><td colspan="4" class="p-4 text-slate-600">Memuat data…</td></tr>
+              <tr><td colspan="5" class="p-4 text-slate-600">Memuat data…</td></tr>
             </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="panel-out" class="hidden md:col-span-3" aria-label="COT diluar inventory">
+        <div class="flex items-baseline justify-between">
+          <h2 class="font-cond text-3xl font-bold">COT diluar inventory</h2>
+          <p id="outStatus" class="text-sm text-slate-600"></p>
+        </div>
+        <div class="mt-3 rounded-xl bg-white border-2 border-ink/15 p-4">
+          <div class="flex items-baseline justify-between">
+            <p class="font-semibold">Progress hari ini</p>
+            <p id="outPct" class="font-cond text-3xl font-bold">0%</p>
+          </div>
+          <div class="mt-2 h-4 rounded-full bg-slate-200 overflow-hidden"><div id="outBar" class="h-full bg-go" style="width:0%"></div></div>
+          <p id="outNote" class="mt-2 text-sm text-slate-700"></p>
+        </div>
+        <div class="mt-3 grid grid-cols-3 gap-3">
+          <div class="rounded-xl bg-white border-2 border-ink/15 p-3"><p class="font-semibold text-slate-700">Done</p><p id="outDone" class="font-cond text-4xl font-bold text-go leading-none mt-1">-</p></div>
+          <div class="rounded-xl bg-white border-2 border-ink/15 p-3"><p class="font-semibold text-slate-700">Menunggu</p><p id="outWaiting" class="font-cond text-4xl font-bold leading-none mt-1">-</p></div>
+          <div class="rounded-xl bg-white border-2 border-ink/15 p-3"><p class="font-semibold text-slate-700">Dikerjakan</p><p id="outLocked" class="font-cond text-4xl font-bold leading-none mt-1">-</p></div>
+        </div>
+        <h3 class="mt-5 font-cond text-2xl font-bold">Daftar COT <span id="outCount" class="text-base font-semibold text-slate-600"></span></h3>
+        <div class="mt-2 rounded-xl bg-white border-2 border-ink/15 overflow-auto max-h-[60vh]">
+          <table class="w-full text-left">
+            <thead class="bg-ink text-white sticky top-0"><tr>
+              <th class="py-2 pl-3 pr-2 font-semibold w-10">#</th><th class="py-2 px-2 font-semibold">COT</th>
+              <th class="py-2 px-2 font-semibold">Staging area</th><th class="py-2 px-2 font-semibold text-right">Total order</th>
+              <th class="py-2 pl-2 pr-3 font-semibold text-right">Binded</th>
+            </tr></thead>
+            <tbody id="outBody"><tr><td colspan="5" class="p-4 text-slate-600">Memuat data…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="panel-done" class="hidden md:col-span-3" aria-label="List COT done">
+        <div class="flex items-baseline justify-between">
+          <h2 class="font-cond text-3xl font-bold">COT done hari ini <span id="doneCount" class="text-xl text-slate-600"></span></h2>
+          <p id="doneStatus" class="text-sm text-slate-600"></p>
+        </div>
+        <div class="mt-3 rounded-xl bg-white border-2 border-ink/15 overflow-auto max-h-[70vh]">
+          <table class="w-full text-left">
+            <thead class="bg-ink text-white sticky top-0"><tr>
+              <th class="py-2 pl-3 pr-2 font-semibold">Jam</th><th class="py-2 px-2 font-semibold">COT</th>
+              <th class="py-2 px-2 font-semibold">Mode</th><th class="py-2 pl-2 pr-3 font-semibold">Operator</th>
+            </tr></thead>
+            <tbody id="doneBody"><tr><td colspan="4" class="p-4 text-slate-600">Memuat data…</td></tr></tbody>
           </table>
         </div>
       </section>
     </main>
 
-    <!-- Navigasi bawah (mobile) -->
-    <nav class="md:hidden fixed bottom-0 inset-x-0 z-20 bg-white border-t-2 border-ink/15 grid grid-cols-2"
+    <nav class="fixed bottom-0 inset-x-0 z-20 bg-white border-t-2 border-ink/15 grid grid-cols-4"
          style="padding-bottom: env(safe-area-inset-bottom)">
-      <button id="tabTask" type="button" class="h-16 font-bold text-lg bg-ink text-white">Tugas</button>
-      <button id="tabDash" type="button" class="h-16 font-bold text-lg text-ink">Monitoring</button>
+      <button id="tabTask" type="button" class="h-16 font-bold">Tugas</button>
+      <button id="tabDash" type="button" class="h-16 font-bold">Monitor</button>
+      <button id="tabOut" type="button" class="h-16 font-bold">Luar Inv.</button>
+      <button id="tabDone" type="button" class="h-16 font-bold">Selesai</button>
     </nav>
   </div>
 
@@ -231,14 +295,14 @@
 
 <script>
   // GANTI dengan URL Web App Anda (yang berakhiran /exec).
-  window.COT_API_URL = 'https://script.google.com/macros/s/AKfycbzw-SlZDoWYyhVtepW7Z5XVxfju6m_mh1F5UFTCn9acyhoObediVsC8dPWYl08WdVyA/exec';
+  window.COT_API_URL = 'PASTE_URL_DEPLOY_DI_SINI';
 </script>
 <script>
 (function () {
   'use strict';
 
   var $ = function (id) { return document.getElementById(id); };
-  var S = { opsId: null, name: '', task: null, blocked: false, busy: false, scanner: null, scanHandled: false };
+  var S = { opsId: null, name: '', mode: null, tab: 'task', right: 'dash', task: null, blocked: false, busy: false, scanner: null, scanHandled: false };
 
   /* ---------- helper ---------- */
   function api(action) {
@@ -336,29 +400,69 @@
 
   function setBusy(b) {
     S.busy = b;
-    ['scanBtn', 'missingBtn', 'refreshTaskBtn', 'logoutBtn'].forEach(function (id) { $(id).disabled = b; });
+    ['scanBtn', 'missingBtn', 'refreshTaskBtn', 'logoutBtn', 'logoutBtn2', 'modeInv', 'modeOut', 'changeModeBtn'].forEach(function (id) { $(id).disabled = b; });
     updateSubmit();
   }
 
   /* ---------- tampilan ---------- */
   function showLogin() {
     $('view-app').classList.add('hidden');
+    $('view-mode').classList.add('hidden');
     $('view-login').classList.remove('hidden');
     $('opsInput').focus();
   }
   function showApp() {
     $('view-login').classList.add('hidden');
+    $('view-mode').classList.add('hidden');
     $('view-app').classList.remove('hidden');
     $('greeting').textContent = 'Halo, ' + S.name;
+    $('modeLabel').textContent = S.mode || '';
     setTab('task');
   }
   function setTab(tab) {
-    var task = tab === 'task';
-    $('panel-task').classList.toggle('hidden', !task);
-    $('panel-dash').classList.toggle('hidden', task);
-    $('tabTask').className = 'h-16 font-bold text-lg ' + (task ? 'bg-ink text-white' : 'text-ink');
-    $('tabDash').className = 'h-16 font-bold text-lg ' + (task ? 'text-ink' : 'bg-ink text-white');
-    if (!task) refreshDash(false);
+    S.tab = tab;
+    if (tab !== 'task') S.right = tab;
+    var isTask = tab === 'task';
+    $('panel-task').className = 'md:col-span-2 md:block' + (isTask ? '' : ' hidden');
+    ['dash', 'out', 'done'].forEach(function (p) {
+      var on = p === S.right;
+      var cls = 'md:col-span-3';
+      if (on) { cls += ' md:block'; if (isTask) cls += ' hidden'; } else { cls += ' hidden'; }
+      $('panel-' + p).className = cls;
+    });
+    [['tabTask', 'task'], ['tabDash', 'dash'], ['tabOut', 'out'], ['tabDone', 'done']].forEach(function (t) {
+      $(t[0]).className = 'h-16 font-bold ' + (S.tab === t[1] ? 'bg-ink text-white' : 'text-ink');
+    });
+    if (!isTask) refreshRight(false);
+  }
+
+  function refreshRight(force) {
+    if (!S.opsId || !S.mode) return;
+    if (S.right === 'out') refreshOut(); else if (S.right === 'done') refreshDone(); else refreshDash(force);
+  }
+
+  function showModeScreen() {
+    $('view-login').classList.add('hidden');
+    $('view-app').classList.add('hidden');
+    $('view-mode').classList.remove('hidden');
+    $('modeGreeting').textContent = 'Halo, ' + S.name;
+  }
+
+  async function chooseMode(mode) {
+    if (S.busy) return;
+    setBusy(true);
+    try {
+      var r = await api('getTask', S.opsId, mode);
+      if (!r || !r.ok) throw new Error((r && r.message) || 'Gagal memuat tugas.');
+      S.mode = r.mode; S.task = r.task;
+      showApp();
+      renderTask();
+      refreshRight(true);
+    } catch (e) {
+      toast(errMsg(e), 'err');
+    } finally {
+      setBusy(false);
+    }
   }
 
   function renderTask() {
@@ -369,7 +473,8 @@
     if (t) {
       $('taskCot').textContent = t.cot;
       $('taskStaging').textContent = t.staging || '-';
-      $('taskMeta').textContent = 'Binded order quantity: ' + fmt(t.binded);
+      $('taskTotal').textContent = fmt(t.total);
+      $('taskBinded').textContent = fmt(t.binded);
     }
     $('cotInput').value = '';
     S.blocked = false;
@@ -400,11 +505,15 @@
         showLogin();
         return;
       }
-      S.opsId = r.opsId; S.name = r.name; S.task = r.task;
+      S.opsId = r.opsId; S.name = r.name;
       store.set(r.opsId);
-      showApp();
-      renderTask();
-      refreshDash(true);
+      if (r.resume) {
+        S.mode = r.resume.mode; S.task = r.resume.task;
+        showApp(); renderTask(); refreshRight(true);
+      } else {
+        S.mode = null; S.task = null;
+        showModeScreen();
+      }
     } catch (e) {
       if (!silent) { $('loginError').textContent = errMsg(e); $('loginError').classList.remove('hidden'); }
       showLogin();
@@ -419,7 +528,7 @@
       var r = await api('logout', S.opsId);
       if (!r || !r.ok) throw new Error((r && r.message) || 'Logout gagal. Coba lagi.');
       store.set(null);
-      S.opsId = null; S.task = null; S.name = '';
+      S.opsId = null; S.task = null; S.name = ''; S.mode = null;
       showLogin();
       $('opsInput').value = '';
     } catch (e) {
@@ -433,7 +542,7 @@
   async function loadTask() {
     setBusy(true);
     try {
-      var r = await api('getTask', S.opsId);
+      var r = await api('getTask', S.opsId, S.mode);
       if (!r || !r.ok) throw new Error((r && r.message) || 'Gagal memuat tugas.');
       S.task = r.task;
       renderTask();
@@ -464,12 +573,12 @@
 
     setBusy(true);
     try {
-      var r = await api('submitCot', S.opsId, v);
+      var r = await api('submitCot', S.opsId, v, S.mode);
       if (r && r.ok) {
         showSuccess(r.done);
         S.task = r.task;
         renderTask();
-        refreshDash(true);
+        refreshRight(true);
       } else if (r && r.code === 'MISMATCH') {
         showBlocker(v, r.expected);
       } else {
@@ -487,12 +596,12 @@
     $('missingModal').classList.add('hidden');
     setBusy(true);
     try {
-      var r = await api('markMissing', S.opsId);
+      var r = await api('markMissing', S.opsId, S.mode);
       if (r && r.ok) {
         toast('COT ' + r.missing + ' ditandai missing.');
         S.task = r.task;
         renderTask();
-        refreshDash(true);
+        refreshRight(true);
       } else {
         toast((r && r.message) || 'Gagal menandai missing.', 'err');
         if (r && r.task !== undefined) { S.task = r.task; renderTask(); }
@@ -616,15 +725,64 @@
     $('progressNote').textContent = fmt(d.manualDone) + ' COT sudah ditarik manual, ' + fmt(d.pending) +
       ' masih pending, ' + fmt(d.locked) + ' sedang dikerjakan, ' + fmt(d.missing) + ' missing.';
 
-    var rows = d.top20 || [];
+    var rows = d.top || [];
+    $('topCount').textContent = '(' + fmt(rows.length) + ')';
     $('topBody').innerHTML = rows.length ? rows.map(function (r, i) {
       return '<tr class="' + (i % 2 ? 'bg-paper' : '') + '">' +
         '<td class="py-2 pl-3 pr-2 font-cond text-xl font-bold">' + (i + 1) + '</td>' +
         '<td class="py-2 px-2 font-semibold break-all">' + esc(r.cot) + badge(r.handled) + '</td>' +
         '<td class="py-2 px-2">' + esc(r.staging) + '</td>' +
+        '<td class="py-2 px-2 text-right font-cond text-xl font-bold">' + fmt(r.total) + '</td>' +
         '<td class="py-2 pl-2 pr-3 text-right font-cond text-xl font-bold">' + fmt(r.binded) + '</td>' +
         '</tr>';
-    }).join('') : '<tr><td colspan="4" class="p-4 text-slate-600">Belum ada data di View Data.</td></tr>';
+    }).join('') : '<tr><td colspan="5" class="p-4 text-slate-600">Belum ada data di View Data.</td></tr>';
+  }
+
+  async function refreshOut() {
+    try {
+      var d = await api('getOutside');
+      if (!d || d.ok === false) throw new Error((d && d.message) || 'Gagal memuat COT diluar inventory.');
+      $('outStatus').textContent = 'Diperbarui ' + d.updatedAt;
+      $('outDone').textContent = fmt(d.done);
+      $('outWaiting').textContent = fmt(d.waiting);
+      $('outLocked').textContent = fmt(d.locked);
+      $('outPct').textContent = d.progress + '%';
+      $('outBar').style.width = Math.min(100, d.progress) + '%';
+      $('outNote').textContent = fmt(d.done) + ' selesai hari ini, ' + fmt(d.waiting) + ' menunggu, ' +
+        fmt(d.locked) + ' sedang dikerjakan, ' + fmt(d.missing) + ' missing.';
+      var rows = d.items || [];
+      $('outCount').textContent = '(' + fmt(rows.length) + ')';
+      $('outBody').innerHTML = rows.length ? rows.map(function (r, i) {
+        return '<tr class="' + (i % 2 ? 'bg-paper' : '') + '">' +
+          '<td class="py-2 pl-3 pr-2 font-cond text-xl font-bold">' + (i + 1) + '</td>' +
+          '<td class="py-2 px-2 font-semibold break-all">' + esc(r.cot) + badge(r.status) +
+            (r.by ? '<span class="block text-xs font-normal text-slate-600">' + esc(r.by) + '</span>' : '') + '</td>' +
+          '<td class="py-2 px-2">' + esc(r.staging) + '</td>' +
+          '<td class="py-2 px-2 text-right font-cond text-xl font-bold">' + fmt(r.total) + '</td>' +
+          '<td class="py-2 pl-2 pr-3 text-right font-cond text-xl font-bold">' + fmt(r.binded) + '</td></tr>';
+      }).join('') : '<tr><td colspan="5" class="p-4 text-slate-600">Belum ada COT di sheet Need to COTR Diluar Inventory.</td></tr>';
+    } catch (e) {
+      $('outStatus').textContent = errMsg(e);
+    }
+  }
+
+  async function refreshDone() {
+    try {
+      var d = await api('getDoneList');
+      if (!d || d.ok === false) throw new Error((d && d.message) || 'Gagal memuat list done.');
+      $('doneStatus').textContent = d.date;
+      $('doneCount').textContent = '(' + fmt(d.count) + ')';
+      var rows = d.items || [];
+      $('doneBody').innerHTML = rows.length ? rows.map(function (r, i) {
+        return '<tr class="' + (i % 2 ? 'bg-paper' : '') + '">' +
+          '<td class="py-2 pl-3 pr-2 font-cond text-xl font-bold">' + esc(r.time) + '</td>' +
+          '<td class="py-2 px-2 font-semibold break-all">' + esc(r.cot) + '</td>' +
+          '<td class="py-2 px-2">' + esc(r.mode) + '</td>' +
+          '<td class="py-2 pl-2 pr-3">' + esc(r.by) + '</td></tr>';
+      }).join('') : '<tr><td colspan="4" class="p-4 text-slate-600">Belum ada COT done hari ini.</td></tr>';
+    } catch (e) {
+      $('doneStatus').textContent = errMsg(e);
+    }
   }
 
   /* ---------- event ---------- */
@@ -636,6 +794,10 @@
   $('opsInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('loginBtn').click(); });
 
   $('logoutBtn').addEventListener('click', doLogout);
+  $('logoutBtn2').addEventListener('click', doLogout);
+  $('modeInv').addEventListener('click', function () { chooseMode('COT Inventory'); });
+  $('modeOut').addEventListener('click', function () { chooseMode('COT Diluar Inventory'); });
+  $('changeModeBtn').addEventListener('click', showModeScreen);
   $('refreshTaskBtn').addEventListener('click', loadTask);
 
   $('cotInput').addEventListener('input', updateSubmit);
@@ -667,13 +829,15 @@
 
   $('tabTask').addEventListener('click', function () { setTab('task'); });
   $('tabDash').addEventListener('click', function () { setTab('dash'); });
+  $('tabOut').addEventListener('click', function () { setTab('out'); });
+  $('tabDone').addEventListener('click', function () { setTab('done'); });
 
   document.addEventListener('pointerdown', unlockAudio, { once: true });
   document.addEventListener('keydown', unlockAudio, { once: true });
   $('successBanner').addEventListener('click', function () { $('successBanner').classList.add('hidden'); });
 
   setInterval(function () {
-    if (S.opsId && !document.hidden) refreshDash(false);
+    if (S.opsId && S.mode && !document.hidden) refreshRight(false);
   }, 30000);
 
   /* ---------- mulai ---------- */
