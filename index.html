@@ -41,7 +41,7 @@
   <!-- ===================== LOGIN ===================== -->
   <section id="view-login" class="min-h-screen flex flex-col justify-center px-6 max-w-md mx-auto">
     <h1 class="font-cond text-6xl font-bold leading-none">COT Runner</h1>
-    <p class="mt-3 text-lg text-slate-700">Masukkan Nomor OpsID untuk mulai menarik COT.</p>
+    <p class="mt-3 text-lg text-slate-700">Masukkan Nomor OpsID untuk mulai.</p>
 
     <label for="opsInput" class="mt-10 block font-semibold">Nomor OpsID</label>
     <input id="opsInput" type="text" autocomplete="off" autocapitalize="off"
@@ -51,6 +51,16 @@
             class="mt-4 h-14 rounded-lg bg-ink text-white text-lg font-bold disabled:opacity-50">Masuk</button>
   </section>
 
+  <!-- ===================== MENU AWAL ===================== -->
+  <section id="view-start" class="hidden min-h-screen flex flex-col justify-center px-6 max-w-md mx-auto">
+    <p id="startGreeting" class="text-lg font-semibold"></p>
+    <h1 class="mt-1 font-cond text-6xl font-bold leading-none">Mau apa?</h1>
+    <p class="mt-3 text-slate-700">Pilih Mulai COTR untuk menarik COT, atau Hanya Monitoring untuk melihat data saja.</p>
+    <button id="startCotr" type="button" class="mt-8 h-20 rounded-xl bg-signal text-ink font-cond text-3xl font-bold disabled:opacity-50">Mulai COTR</button>
+    <button id="startMonitor" type="button" class="mt-3 h-20 rounded-xl bg-ink text-white font-cond text-3xl font-bold disabled:opacity-50">Hanya Monitoring</button>
+    <button id="logoutBtn3" type="button" class="mt-6 h-12 rounded-lg border-2 border-ink/30 font-bold disabled:opacity-50">Logout</button>
+  </section>
+
   <!-- ===================== PILIH MODE ===================== -->
   <section id="view-mode" class="hidden min-h-screen flex flex-col justify-center px-6 max-w-md mx-auto">
     <p id="modeGreeting" class="text-lg font-semibold"></p>
@@ -58,7 +68,8 @@
     <p class="mt-3 text-slate-700">Pilih jenis COT yang akan Anda tarik. Mode bisa diganti kapan saja tanpa logout.</p>
     <button id="modeInv" type="button" class="mt-8 h-20 rounded-xl bg-signal text-ink font-cond text-3xl font-bold disabled:opacity-50">COT Inventory</button>
     <button id="modeOut" type="button" class="mt-3 h-20 rounded-xl bg-ink text-white font-cond text-3xl font-bold disabled:opacity-50">COT Diluar Inventory</button>
-    <button id="logoutBtn2" type="button" class="mt-6 h-12 rounded-lg border-2 border-ink/30 font-bold disabled:opacity-50">Logout</button>
+    <button id="modeBack" type="button" class="mt-6 h-12 rounded-lg border-2 border-ink/30 font-bold disabled:opacity-50">Kembali</button>
+    <button id="logoutBtn2" type="button" class="mt-3 h-12 rounded-lg border-2 border-ink/30 font-bold disabled:opacity-50">Logout</button>
   </section>
 
   <!-- ===================== APLIKASI ===================== -->
@@ -66,8 +77,12 @@
     <header class="sticky top-0 z-20 bg-ink text-white">
       <div class="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
         <p id="greeting" class="font-semibold text-lg truncate"></p>
-        <button id="logoutBtn" type="button"
-                class="h-10 px-4 rounded-md border border-white/50 text-sm font-semibold shrink-0 disabled:opacity-50">Logout</button>
+        <div class="flex gap-2 shrink-0">
+          <button id="homeBtn" type="button"
+                  class="h-10 px-4 rounded-md border border-white/50 text-sm font-semibold disabled:opacity-50">Menu awal</button>
+          <button id="logoutBtn" type="button"
+                  class="h-10 px-4 rounded-md border border-white/50 text-sm font-semibold disabled:opacity-50">Logout</button>
+        </div>
       </div>
     </header>
 
@@ -176,6 +191,22 @@
         </div>
       </section>
 
+      <section id="panel-active" class="hidden md:col-span-3" aria-label="COT sedang dikerjakan">
+        <div class="flex items-baseline justify-between">
+          <h2 class="font-cond text-3xl font-bold">COT sedang dikerjakan <span id="activeCount" class="text-xl text-slate-600"></span></h2>
+          <p id="activeStatus" class="text-sm text-slate-600"></p>
+        </div>
+        <div class="mt-3 rounded-xl bg-white border-2 border-ink/15 overflow-auto max-h-[70vh]">
+          <table class="w-full text-left">
+            <thead class="bg-ink text-white sticky top-0"><tr>
+              <th class="py-2 pl-3 pr-2 font-semibold">Ditugaskan</th><th class="py-2 px-2 font-semibold">COT</th>
+              <th class="py-2 px-2 font-semibold">Operator</th><th class="py-2 pl-2 pr-3 font-semibold text-right">Lama</th>
+            </tr></thead>
+            <tbody id="activeBody"><tr><td colspan="4" class="p-4 text-slate-600">Memuat data…</td></tr></tbody>
+          </table>
+        </div>
+      </section>
+
       <section id="panel-out" class="hidden md:col-span-3" aria-label="COT diluar inventory">
         <div class="flex items-baseline justify-between">
           <h2 class="font-cond text-3xl font-bold">COT diluar inventory</h2>
@@ -224,10 +255,11 @@
       </section>
     </main>
 
-    <nav class="fixed bottom-0 inset-x-0 z-20 bg-white border-t-2 border-ink/15 grid grid-cols-4"
+    <nav id="bottomNav" class="fixed bottom-0 inset-x-0 z-20 bg-white border-t-2 border-ink/15 grid"
          style="padding-bottom: env(safe-area-inset-bottom)">
       <button id="tabTask" type="button" class="h-16 font-bold">Tugas</button>
       <button id="tabDash" type="button" class="h-16 font-bold">Monitor</button>
+      <button id="tabActive" type="button" class="h-16 font-bold">Aktif</button>
       <button id="tabOut" type="button" class="h-16 font-bold">Luar Inv.</button>
       <button id="tabDone" type="button" class="h-16 font-bold">Selesai</button>
     </nav>
@@ -302,7 +334,7 @@
   'use strict';
 
   var $ = function (id) { return document.getElementById(id); };
-  var S = { opsId: null, name: '', mode: null, tab: 'task', right: 'dash', task: null, blocked: false, busy: false, scanner: null, scanHandled: false };
+  var S = { opsId: null, name: '', mode: null, monitor: false, tab: 'task', right: 'dash', task: null, blocked: false, busy: false, scanner: null, scanHandled: false };
 
   /* ---------- helper ---------- */
   function api(action) {
@@ -400,52 +432,65 @@
 
   function setBusy(b) {
     S.busy = b;
-    ['scanBtn', 'missingBtn', 'refreshTaskBtn', 'logoutBtn', 'logoutBtn2', 'modeInv', 'modeOut', 'changeModeBtn'].forEach(function (id) { $(id).disabled = b; });
+    ['scanBtn', 'missingBtn', 'refreshTaskBtn', 'logoutBtn', 'logoutBtn2', 'logoutBtn3', 'modeInv', 'modeOut',
+     'changeModeBtn', 'startCotr', 'startMonitor', 'modeBack', 'homeBtn'].forEach(function (id) { $(id).disabled = b; });
     updateSubmit();
   }
 
   /* ---------- tampilan ---------- */
+  function hideViews() {
+    ['view-login', 'view-start', 'view-mode', 'view-app'].forEach(function (id) { $(id).classList.add('hidden'); });
+  }
   function showLogin() {
-    $('view-app').classList.add('hidden');
-    $('view-mode').classList.add('hidden');
+    hideViews();
     $('view-login').classList.remove('hidden');
     $('opsInput').focus();
   }
+  function showStart() {
+    S.mode = null; S.task = null; S.monitor = false;
+    hideViews();
+    $('view-start').classList.remove('hidden');
+    $('startGreeting').textContent = 'Halo, ' + S.name;
+  }
+  function showModeScreen() {
+    hideViews();
+    $('view-mode').classList.remove('hidden');
+    $('modeGreeting').textContent = 'Halo, ' + S.name;
+  }
   function showApp() {
-    $('view-login').classList.add('hidden');
-    $('view-mode').classList.add('hidden');
+    hideViews();
     $('view-app').classList.remove('hidden');
     $('greeting').textContent = 'Halo, ' + S.name;
     $('modeLabel').textContent = S.mode || '';
-    setTab('task');
+    $('bottomNav').style.gridTemplateColumns = 'repeat(' + (S.monitor ? 4 : 5) + ', minmax(0, 1fr))';
+    S.right = 'dash';
+    setTab(S.monitor ? 'dash' : 'task');
   }
   function setTab(tab) {
     S.tab = tab;
     if (tab !== 'task') S.right = tab;
     var isTask = tab === 'task';
-    $('panel-task').className = 'md:col-span-2 md:block' + (isTask ? '' : ' hidden');
-    ['dash', 'out', 'done'].forEach(function (p) {
+    var span = S.monitor ? 'md:col-span-5' : 'md:col-span-3';
+    $('panel-task').className = S.monitor ? 'hidden' : ('md:col-span-2 md:block' + (isTask ? '' : ' hidden'));
+    ['dash', 'out', 'done', 'active'].forEach(function (p) {
       var on = p === S.right;
-      var cls = 'md:col-span-3';
+      var cls = span;
       if (on) { cls += ' md:block'; if (isTask) cls += ' hidden'; } else { cls += ' hidden'; }
       $('panel-' + p).className = cls;
     });
-    [['tabTask', 'task'], ['tabDash', 'dash'], ['tabOut', 'out'], ['tabDone', 'done']].forEach(function (t) {
-      $(t[0]).className = 'h-16 font-bold ' + (S.tab === t[1] ? 'bg-ink text-white' : 'text-ink');
+    [['tabTask', 'task'], ['tabDash', 'dash'], ['tabActive', 'active'], ['tabOut', 'out'], ['tabDone', 'done']].forEach(function (t) {
+      $(t[0]).className = 'h-16 font-bold ' + (S.tab === t[1] ? 'bg-ink text-white' : 'text-ink') +
+        (t[1] === 'task' && S.monitor ? ' hidden' : '');
     });
     if (!isTask) refreshRight(false);
   }
 
   function refreshRight(force) {
-    if (!S.opsId || !S.mode) return;
-    if (S.right === 'out') refreshOut(); else if (S.right === 'done') refreshDone(); else refreshDash(force);
-  }
-
-  function showModeScreen() {
-    $('view-login').classList.add('hidden');
-    $('view-app').classList.add('hidden');
-    $('view-mode').classList.remove('hidden');
-    $('modeGreeting').textContent = 'Halo, ' + S.name;
+    if (!S.opsId || !(S.mode || S.monitor)) return;
+    if (S.right === 'out') refreshOut();
+    else if (S.right === 'done') refreshDone();
+    else if (S.right === 'active') refreshActive();
+    else refreshDash(force);
   }
 
   async function chooseMode(mode) {
@@ -454,10 +499,38 @@
     try {
       var r = await api('getTask', S.opsId, mode);
       if (!r || !r.ok) throw new Error((r && r.message) || 'Gagal memuat tugas.');
-      S.mode = r.mode; S.task = r.task;
+      S.mode = r.mode; S.task = r.task; S.monitor = false;
       showApp();
       renderTask();
       refreshRight(true);
+    } catch (e) {
+      toast(errMsg(e), 'err');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function startMonitor() {
+    if (S.busy) return;
+    setBusy(true);
+    try {
+      await api('release', S.opsId);   // pastikan tidak ada COT yang tertahan
+      S.monitor = true; S.mode = null; S.task = null;
+      showApp();
+      refreshRight(true);
+    } catch (e) {
+      toast(errMsg(e), 'err');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function goHome() {
+    if (S.busy) return;
+    setBusy(true);
+    try {
+      if (!S.monitor) await api('release', S.opsId);  // lepas COT yang sedang dikerjakan
+      showStart();
     } catch (e) {
       toast(errMsg(e), 'err');
     } finally {
@@ -508,11 +581,10 @@
       S.opsId = r.opsId; S.name = r.name;
       store.set(r.opsId);
       if (r.resume) {
-        S.mode = r.resume.mode; S.task = r.resume.task;
+        S.monitor = false; S.mode = r.resume.mode; S.task = r.resume.task;
         showApp(); renderTask(); refreshRight(true);
       } else {
-        S.mode = null; S.task = null;
-        showModeScreen();
+        showStart();
       }
     } catch (e) {
       if (!silent) { $('loginError').textContent = errMsg(e); $('loginError').classList.remove('hidden'); }
@@ -528,7 +600,7 @@
       var r = await api('logout', S.opsId);
       if (!r || !r.ok) throw new Error((r && r.message) || 'Logout gagal. Coba lagi.');
       store.set(null);
-      S.opsId = null; S.task = null; S.name = ''; S.mode = null;
+      S.opsId = null; S.task = null; S.name = ''; S.mode = null; S.monitor = false;
       showLogin();
       $('opsInput').value = '';
     } catch (e) {
@@ -728,9 +800,12 @@
     var rows = d.top || [];
     $('topCount').textContent = '(' + fmt(rows.length) + ')';
     $('topBody').innerHTML = rows.length ? rows.map(function (r, i) {
+      // Done = teks COT hijau, sedang dikerjakan = oranye, Missing tetap pakai badge merah.
+      var warna = r.handled === 'DONE' ? ' text-go' : (r.handled === 'LOCKED' ? ' text-orange-600' : '');
       return '<tr class="' + (i % 2 ? 'bg-paper' : '') + '">' +
         '<td class="py-2 pl-3 pr-2 font-cond text-xl font-bold">' + (i + 1) + '</td>' +
-        '<td class="py-2 px-2 font-semibold break-all">' + esc(r.cot) + badge(r.handled) + '</td>' +
+        '<td class="py-2 px-2 font-semibold break-all' + warna + '">' + esc(r.cot) +
+          (r.handled === 'MISSING' ? badge('MISSING') : '') + '</td>' +
         '<td class="py-2 px-2">' + esc(r.staging) + '</td>' +
         '<td class="py-2 px-2 text-right font-cond text-xl font-bold">' + fmt(r.total) + '</td>' +
         '<td class="py-2 pl-2 pr-3 text-right font-cond text-xl font-bold">' + fmt(r.binded) + '</td>' +
@@ -785,6 +860,26 @@
     }
   }
 
+  async function refreshActive() {
+    try {
+      var d = await api('getActive');
+      if (!d || d.ok === false) throw new Error((d && d.message) || 'Gagal memuat COT yang dikerjakan.');
+      $('activeStatus').textContent = 'Diperbarui ' + d.updatedAt;
+      $('activeCount').textContent = '(' + fmt(d.count) + ')';
+      var rows = d.items || [];
+      $('activeBody').innerHTML = rows.length ? rows.map(function (r, i) {
+        return '<tr class="' + (i % 2 ? 'bg-paper' : '') + '">' +
+          '<td class="py-2 pl-3 pr-2 font-cond text-xl font-bold">' + esc(r.time) + '</td>' +
+          '<td class="py-2 px-2 font-semibold break-all text-orange-600">' + esc(r.cot) +
+            '<span class="block text-xs font-normal text-slate-600">' + esc(r.mode) + '</span></td>' +
+          '<td class="py-2 px-2">' + esc(r.by) + '</td>' +
+          '<td class="py-2 pl-2 pr-3 text-right font-cond text-xl font-bold">' + fmt(r.minutes) + ' mnt</td></tr>';
+      }).join('') : '<tr><td colspan="4" class="p-4 text-slate-600">Tidak ada COT yang sedang dikerjakan.</td></tr>';
+    } catch (e) {
+      $('activeStatus').textContent = errMsg(e);
+    }
+  }
+
   /* ---------- event ---------- */
   $('loginBtn').addEventListener('click', function () {
     var id = $('opsInput').value.trim();
@@ -795,6 +890,11 @@
 
   $('logoutBtn').addEventListener('click', doLogout);
   $('logoutBtn2').addEventListener('click', doLogout);
+  $('logoutBtn3').addEventListener('click', doLogout);
+  $('startCotr').addEventListener('click', showModeScreen);
+  $('startMonitor').addEventListener('click', startMonitor);
+  $('modeBack').addEventListener('click', showStart);
+  $('homeBtn').addEventListener('click', goHome);
   $('modeInv').addEventListener('click', function () { chooseMode('COT Inventory'); });
   $('modeOut').addEventListener('click', function () { chooseMode('COT Diluar Inventory'); });
   $('changeModeBtn').addEventListener('click', showModeScreen);
@@ -829,6 +929,7 @@
 
   $('tabTask').addEventListener('click', function () { setTab('task'); });
   $('tabDash').addEventListener('click', function () { setTab('dash'); });
+  $('tabActive').addEventListener('click', function () { setTab('active'); });
   $('tabOut').addEventListener('click', function () { setTab('out'); });
   $('tabDone').addEventListener('click', function () { setTab('done'); });
 
@@ -837,7 +938,7 @@
   $('successBanner').addEventListener('click', function () { $('successBanner').classList.add('hidden'); });
 
   setInterval(function () {
-    if (S.opsId && S.mode && !document.hidden) refreshRight(false);
+    if (S.opsId && (S.mode || S.monitor) && !document.hidden) refreshRight(false);
   }, 30000);
 
   /* ---------- mulai ---------- */
